@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS run_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_name TEXT NOT NULL,
+  ts TIMESTAMP WITH TIME ZONE NOT NULL,
+  comment TEXT NOT NULL
+);

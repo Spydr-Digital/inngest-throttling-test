@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inngest Throttling Test
+This repo contains a basic project which demonstrates Inngest behaviour around throttling and bursting.
 
-## Getting Started
+## Problem
 
-First, run the development server:
+Inngest is an event-based job scheduling and running service that supports function-level throttling configuration. The throttling config allows you to specify that `n` function invocations should start every `[period]` (e.g., `10/2 minutes` means 10 invocations per 2 minutes).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Additionally, you may optionally specify a `burst` number which controls how function invocations should be spread across the time period. The default `burst` value is `1`, which specifies that there should be no burst and all invocations should be evenly spread across the time period.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**The Issue:** Regardless of the value of `burst`, the function invocations are not being evenly distributed across the specified time period as expected. Instead, they appear to be executed with a large initial burst, followed by a significantly reduced rate of invocation.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This repository contains a simple function implementation that demonstrates this behavior. The intended usage is to vary the throttle configuration in the `logRunEvent` function code (located in `inngest/functions/logRunEvent/index.ts`) and observe how the throttling behaves. The function is currently configured with a throttle of `100/1m` (100 invocations per minute) with `burst: 1`. When 100 events are triggered, they should be evenly distributed across the 1-minute period, but the visualization shows they are not.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The project includes a web interface that graphs the actual invocation timestamps, making it easy to see how the throttling behaves with different configurations.
 
-## Learn More
+### 150 events @ 100 events per minute (Burst 1)
 
-To learn more about Next.js, take a look at the following resources:
+![150 events @ 100 events per minute (Burst 1)](./images/150_events_100_1m_1burst.png)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Running this project
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Prerequisites
 
-## Deploy on Vercel
+- Node.js and pnpm installed
+- Supabase CLI installed
+- Docker running (required for Supabase local development)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+2. Start Supabase locally:
+   ```bash
+   pnpm supabase:start
+   ```
+   This will start all Supabase services including the database, API, and Studio.
+
+3. (Optional) Reset the database if needed:
+   ```bash
+   pnpm supabase:reset
+   ```
+   This will reset the database and run all migrations.
+
+4. Start the Inngest dev server:
+   ```bash
+   pnpm inngest:dev
+   ```
+   This runs the Inngest CLI in development mode to handle your Inngest functions.
+
+5. Start the Next.js development server:
+   ```bash
+   pnpm dev
+   ```
+
+The application will be available at [`http://localhost:3000`](http://localhost:3000).  
+Supabase Studio will be available at [`http://localhost:54323`](http://localhost:54323).  
+Inngest will be available at [`http://localhost:8288`](http://localhost:8288).
