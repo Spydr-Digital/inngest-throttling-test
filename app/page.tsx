@@ -8,7 +8,10 @@ export default async function Page() {
   const cookieStore = await cookies()
   const supabase = await createClient(cookieStore)
 
-  const { data } = await supabase.from('run_logs').select('*').order('ts', { ascending: false })
+  const { data } = await supabase
+    .rpc('get_distinct_runs')
+    .order('ts', { ascending: false }) as { data: { run_name: string, comment: string, ts: string }[] }
+
   if(!data) {
     return (
       <div className="p-8">
@@ -17,15 +20,14 @@ export default async function Page() {
       </div>
     )
   }
-  const distinctData = data.filter((run, index, self) => self.findIndex((t) => t.run_name === run.run_name) === index)
 
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Run Logs</h1>
       <InngestForm />
-      {distinctData && distinctData.length > 0 ? (
+      {data.length > 0 ? (
         <ul className="space-y-3">
-          {distinctData.map((datum) => (
+          {data.map((datum) => (
             <li key={datum.run_name}>
               <Link
                 href={`/${datum.run_name}`}
