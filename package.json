@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
     "inngest:dev": "npx inngest-cli@latest dev"
   },

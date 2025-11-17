@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 import TimestampChart from './TimestampChart'
+import CopyButton from './CopyButton'
 
 type RunLog = {
   run_name: string
@@ -13,16 +14,25 @@ export default async function Page({ params }: { params: Promise<{ run_id: strin
   const cookieStore = await cookies()
   const supabase = await createClient(cookieStore)
 
-  const { data } = await supabase.from('run_logs').select().eq('run_name', run_id) as { data: RunLog[] }
+  const { data, error } = await supabase.from('run_logs').select().eq('run_name', run_id) as { data: RunLog[], error: null } | { data: null, error: Error }
+  if(error) {
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-4">Error: {error.message}</h1>
+      </div>
+    )
+  }
 
   // Calculate metrics
   const totalEvents = data?.length || 0
   let formattedDuration = '0ms'
+  let minTime = 0
+  let maxTime = 0
 
   if (data && data.length > 0) {
     const timestamps = data.map(log => new Date(log.ts).getTime())
-    const minTime = Math.min(...timestamps)
-    const maxTime = Math.max(...timestamps)
+    minTime = Math.min(...timestamps)
+    maxTime = Math.max(...timestamps)
     const totalDuration = maxTime - minTime
 
     // Format duration
@@ -50,13 +60,18 @@ export default async function Page({ params }: { params: Promise<{ run_id: strin
       {data && data.length > 0 ? (
         <>
           <div className="mb-6">
-            <p className="text-sm text-gray-300 mb-2">Total events: {totalEvents} | Total duration: {formattedDuration}</p>
+            <p className="text-sm text-gray-300 mb-2">Total events: {totalEvents} | Total duration: {formattedDuration} | Events per second: {(totalEvents / (maxTime - minTime) * 1000).toFixed(2)}</p>
             <TimestampChart data={data} />
           </div>
-          <details className="mt-6">
-            <summary className="cursor-pointer text-sm text-gray-600">View raw data</summary>
-            <pre className="mt-2 p-4 bg-gray-100 text-black rounded overflow-auto">{JSON.stringify(data, null, 2)}</pre>
-          </details>
+          <div className="mt-6 flex items-center gap-4 max-w-full">
+            <details className="flex-1 flex flex-col">
+              <summary className="cursor-pointer text-sm text-gray-600 flex items-center justify-between">
+                <span>View raw data</span>
+                <CopyButton data={data} />
+              </summary>
+              <pre className="mt-2 p-4 bg-gray-100 text-black rounded overflow-auto">{JSON.stringify(data, null, 2)}</pre>
+            </details>
+          </div>
         </>
       ) : (
         <p>No data found for this run.</p>

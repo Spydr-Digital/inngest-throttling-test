@@ -8,9 +8,12 @@ const throttleConfig = {
   burst: 1,
 }
 
+const concurrency = undefined;
+
 export default inngest.createFunction({
   id: "log-run-event",
   throttle: throttleConfig,
+  concurrency,
   retries: 0,
 }, {
   event: EventName,
@@ -22,7 +25,7 @@ export default inngest.createFunction({
     await supabase.from('run_logs').insert({
       run_name: runName,
       ts: new Date().toISOString(),
-      comment: `${count} events @ ${throttleConfig.limit}/${throttleConfig.period} w/ ${throttleConfig.burst} burst`,
+      comment: `${count} events @ ${throttleConfig.limit}/${throttleConfig.period} w/ ${throttleConfig.burst} burst${concurrency ? ` and ${concurrency} concurrency` : ''}`,
     }).throwOnError()
   })
 })

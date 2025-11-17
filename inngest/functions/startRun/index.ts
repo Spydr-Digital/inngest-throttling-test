@@ -23,6 +23,7 @@ export default inngest.createFunction({
   })
 
 
+  const BATCH_SIZE = 500
   const runEvents = [...Array(count)].map(() => {
     return {
       name: LogRunEventName,
@@ -33,7 +34,22 @@ export default inngest.createFunction({
     }
   })
 
-  await step.sendEvent('start-subruns', runEvents)
+  const batchedEvents = batchEvents(runEvents, BATCH_SIZE)
+
+  for(const batch of batchedEvents) {
+    await step.sendEvent('start-subruns', batch)
+  }
 
   return runName
 })
+
+const batchEvents = <T>(events: T[], batchSize: number): T[][] => (
+  events.reduce((acc, event, index) => {
+    const batchIndex = Math.floor(index / batchSize)
+    if (!acc[batchIndex]) {
+      acc[batchIndex] = []
+    }
+    acc[batchIndex].push(event)
+    return acc
+  }, [] as T[][])
+)
